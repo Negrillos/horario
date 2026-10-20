@@ -1,6 +1,6 @@
 // Guarda la app para que abra sin internet. Con internet, siempre trae la última versión.
-const CACHE = 'horario-v3';
-const ASSETS = ['./', './index.html', './plan.json', './manifest.webmanifest', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
+const CACHE = 'horario-v4';
+const ASSETS = ['./', './index.html', './plan.json', './manifest.webmanifest', './apple-touch-icon-3.png', './icon-192-3.png', './icon-512-3.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
@@ -9,7 +9,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(r => {
+    // lo de tu web siempre se pide fresco (sin la caché de 10 min de GitHub); si no hay internet, la copia guardada
+    fetch(new URL(e.request.url).origin === location.origin ? new Request(e.request.url, { cache: 'no-cache' }) : e.request).then(r => {
       if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return r;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(m => m || caches.match('./index.html')))
