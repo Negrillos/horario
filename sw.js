@@ -1,6 +1,6 @@
 // Guarda la app para que abra sin internet. Con internet, siempre trae la última versión.
-const CACHE = 'horario-v4';
-const ASSETS = ['./', './index.html', './plan.json', './manifest.webmanifest', './apple-touch-icon-3.png', './icon-192-3.png', './icon-512-3.png'];
+const CACHE = 'horario-v5';
+const ASSETS = ['./', './index.html', './plan.json', './manifest.webmanifest', './apple-touch-icon-4.png', './icon-192-4.png', './icon-512-4.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
