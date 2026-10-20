@@ -1,0 +1,5 @@
+# salidas que genera src/build.py (lo publicado se copia a la raíz)
+src/site/
+src/horario.html
+src/*.ics
+__pycache__/
