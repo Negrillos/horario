@@ -131,15 +131,17 @@ function buildWidget(plan, s, family) {
     start = Math.max(0, start);
   }
   const rows = evs.slice(start, start + max);
-  const fs = small ? 11 : 12;
+  // letra según cuántas filas haya: con menos filas, más grande
+  const fs = small ? 11 : (big ? (rows.length <= 9 ? 14 : (rows.length <= 12 ? 13 : 12)) : 12);
 
   rows.forEach((e, i) => {
     const idx = start + i;
     const isCur = idx === cur;
     const isPast = toMin(e.e) <= nowMin;
+    if (i > 0) w.addSpacer(); // reparte las filas por toda la altura del widget
     const r = w.addStack();
     r.layoutHorizontally(); r.centerAlignContent();
-    r.setPadding(2, 4, 2, 6); r.cornerRadius = 5;
+    r.setPadding(3, 4, 3, 6); r.cornerRadius = 6;
     if (isCur) r.backgroundColor = colorOf(e, plan, 0.2);
 
     const tc = r.addStack(); tc.size = new Size(small ? 38 : 44, 0);
@@ -167,11 +169,11 @@ function buildWidget(plan, s, family) {
 
   const before = start, after = evs.length - start - rows.length;
   if ((before || after) && !small) {
-    w.addSpacer(3);
+    w.addSpacer();
     const more = w.addText((before ? "↑ " + before + " antes" : "") + (before && after ? " · " : "") + (after ? "↓ " + after + " después" : ""));
     more.font = Font.regularMonospacedSystemFont(10); more.textColor = FAINT;
   }
-  w.addSpacer();
+  if (rows.length < 2) w.addSpacer();
 
   // refrescar al cambiar de bloque (iOS decide el momento exacto)
   const bounds = evs.map(e => toMin(e.s)).concat(evs.map(e => toMin(e.e))).filter(m => m > nowMin);
