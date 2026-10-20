@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Horario">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F1F3F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1216" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Horario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: hoja milimetrada. Cabecera y controles arriba, la semana en rejilla horaria, el sistema debajo en columnas. */
+:root{
+  --bg:#F1F3F6; --surface:#FFFFFF; --surface-2:#E7EBF0; --line:#D2D9E1; --grid:#E2E7ED; --grid-2:#EEF1F5;
+  --fg:#121820; --muted:#59646F; --ink:#121820; --on-ink:#FFFFFF;
+  --fill:15%; --fill-2:24%; --edge:52%; --txt:40%; --shadow:rgb(16 24 32 / .14);
+  --electro:#B48100; --mmcs:#2866CC; --optisim:#08847A; --rm:#5848CC; --tsm:#468220; --oyg:#AE3487;
+  --racein:#D95A20; --sport:#CB382B; --a:#D64B76; --spirit:#82725D; --neutral:#7A8590;
+  --f-ui:"Archivo","Helvetica Neue",Arial,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --pph:46px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1216; --surface:#151A20; --surface-2:#1D242C; --line:#2B343E; --grid:#212931; --grid-2:#1A2027;
+    --fg:#E5EAEF; --muted:#93A0AC; --ink:#E5EAEF; --on-ink:#0E1216;
+    --fill:24%; --fill-2:33%; --edge:60%; --txt:45%; --shadow:rgb(0 0 0 / .5);
+    --electro:#E2B13A; --mmcs:#5C95F2; --optisim:#2DB7A9; --rm:#8E82F4; --tsm:#7EBA4E; --oyg:#DD6AB6;
+    --racein:#F07F47; --sport:#F06457; --a:#F27C9F; --spirit:#B5A68F; --neutral:#8E99A5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1216; --surface:#151A20; --surface-2:#1D242C; --line:#2B343E; --grid:#212931; --grid-2:#1A2027;
+  --fg:#E5EAEF; --muted:#93A0AC; --ink:#E5EAEF; --on-ink:#0E1216;
+  --fill:24%; --fill-2:33%; --edge:60%; --txt:45%; --shadow:rgb(0 0 0 / .5);
+  --electro:#E2B13A; --mmcs:#5C95F2; --optisim:#2DB7A9; --rm:#8E82F4; --tsm:#7EBA4E; --oyg:#DD6AB6;
+  --racein:#F07F47; --sport:#F06457; --a:#F27C9F; --spirit:#B5A68F; --neutral:#8E99A5;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1300px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 140px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* cabecera */
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+h1{font-stretch:125%;font-weight:800;font-size:clamp(32px,5.6vw,60px);line-height:.98;letter-spacing:-.025em;margin:.22em 0 .28em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0;font-size:16px}
+
+/* controles */
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;margin-top:24px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{appearance:none;border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:baseline;font-weight:650;font-stretch:90%}
+.tab small{font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--muted);font-stretch:100%}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+.tab[aria-selected="true"] small{color:color-mix(in oklab,var(--on-ink) 70%,var(--ink))}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;user-select:none}
+.sw input{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .15s}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.sw input:checked{background:var(--ink);border-color:var(--ink)}
+.sw input:checked::after{transform:translateX(14px);background:var(--on-ink)}
+.seg{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.seg-in{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg-in button{appearance:none;border:0;background:transparent;padding:4px 10px;cursor:pointer;font-family:var(--f-mono);font-size:12.5px}
+.seg-in button+button{border-left:1px solid var(--line)}
+.seg-in button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.wbtn{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;cursor:pointer;font-family:var(--f-mono);font-size:12.5px}
+
+.banner{margin-top:16px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);max-width:100%;display:grid;gap:4px}
+.banner p{margin:0}
+.banner .warn{color:color-mix(in oklab,var(--sport) 70%,var(--fg));font-weight:600}
+
+/* resumen */
+.sum{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 22px}
+.sum-row{display:grid;grid-template-columns:62px 1fr 56px;align-items:center;gap:10px;font-size:13.5px}
+.sum-row b{font-weight:650}
+.sum-row .v{font-family:var(--f-mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.track{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.track i{display:block;height:100%;background:var(--c);border-radius:4px}
+.sum-foot{margin-top:8px;font-size:13px;color:var(--muted);font-family:var(--f-mono)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:11px;border-radius:3px;display:inline-block}
+
+/* calendario */
+.pills{display:none}
+.calwrap{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow-x:auto}
+.cal{display:grid;grid-template-columns:46px repeat(var(--n),minmax(112px,1fr));min-width:calc(46px + var(--n) * 112px)}
+.corner{border-bottom:1px solid var(--line)}
+.dh{padding:8px 8px 7px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
+.dh .dn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.dh .dd{font-family:var(--f-mono);font-size:20px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums}
+.dh.today .dn,.dh.today .dd{color:var(--fg)}
+.dh.today{box-shadow:inset 0 -3px 0 var(--ink)}
+.badge{flex-basis:100%;font-size:11px;font-weight:700;font-stretch:85%;letter-spacing:.02em;text-transform:uppercase;color:color-mix(in oklab,var(--c) 60%,var(--fg))}
+.axis{position:relative;height:calc(var(--pph) * 19)}
+.axis span{position:absolute;right:6px;transform:translateY(-50%);font-family:var(--f-mono);font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dc{position:relative;height:calc(var(--pph) * 19);border-left:1px solid var(--line);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(var(--grid-2) 1px,transparent 1px);
+  background-size:100% var(--pph),100% calc(var(--pph) / 2);
+  background-position:0 calc(var(--pph) / 2),0 0}
+.dc.today{background-color:color-mix(in oklab,var(--ink) 3%,var(--surface))}
+.now{position:absolute;left:0;right:0;height:2px;background:var(--sport);z-index:4;pointer-events:none}
+.now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--sport)}
+
+.ev{position:absolute;left:3px;right:3px;appearance:none;margin:0;text-align:left;cursor:pointer;overflow:hidden;
+  border-radius:5px;padding:3px 6px;display:flex;flex-direction:column;gap:1px;
+  font-stretch:78%;font-size:12.5px;line-height:1.15;
+  --c:var(--neutral);
+  background:color-mix(in oklab,var(--c) var(--fill),var(--surface));
+  border:1px solid color-mix(in oklab,var(--c) var(--edge),var(--surface));
+  color:color-mix(in oklab,var(--c) var(--txt),var(--fg))}
+.ev .t{font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ev .h{font-family:var(--f-mono);font-size:10px;font-stretch:100%;opacity:.8;font-variant-numeric:tabular-nums}
+.ev.sm{flex-direction:row;align-items:center;padding-block:0}
+.ev.sm .t{-webkit-line-clamp:1}
+.ev.sm .h,.ev.xs .t,.ev.xs .h{display:none}
+.ev:hover{filter:brightness(.97)}
+.ev:focus-visible{outline:2px solid var(--ink);outline-offset:1px;z-index:5}
+.c-class,.c-lab{background:var(--surface);border:1.5px solid var(--c);color:color-mix(in oklab,var(--c) 58%,var(--fg))}
+.c-lab{background:repeating-linear-gradient(135deg,var(--surface) 0 6px,color-mix(in oklab,var(--c) 12%,var(--surface)) 6px 12px)}
+.c-exam{background:color-mix(in oklab,var(--c) 36%,var(--surface));border:2px solid var(--c);color:var(--fg)}
+.c-exam .t{font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+.c-racein{background:repeating-linear-gradient(135deg,color-mix(in oklab,var(--c) var(--fill),var(--surface)) 0 7px,color-mix(in oklab,var(--c) var(--fill-2),var(--surface)) 7px 14px)}
+.c-travel{background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--surface) 3px 7px);border:1px solid var(--grid);color:var(--muted)}
+.c-sleep{background:repeating-linear-gradient(135deg,color-mix(in oklab,var(--neutral) 16%,var(--surface)) 0 2px,var(--surface) 2px 6px);border:1px solid var(--grid);color:var(--muted)}
+.c-meal,.c-routine{background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.c-cook{background:var(--surface-2);border:1px solid var(--line);color:var(--fg)}
+.c-recharge{background:var(--surface);border:1px dashed color-mix(in oklab,var(--neutral) 70%,var(--surface));color:var(--muted)}
+.c-buffer,.c-review{background:var(--surface);border:1.5px dashed color-mix(in oklab,var(--fg) 50%,var(--surface));color:var(--fg)}
+.c-free{background:transparent;border:1px dotted color-mix(in oklab,var(--fg) 35%,var(--surface));color:var(--muted);font-style:italic}
+.c-ocio{background:color-mix(in oklab,var(--neutral) 8%,var(--surface));border:1px solid var(--grid);color:var(--muted)}
+.c-bed{background:var(--ink);border:1px solid var(--ink);color:var(--on-ink)}
+
+/* hoja de detalle */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -12px 32px var(--shadow);
+  padding-top:16px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet-in{max-width:720px;margin:0 auto;display:grid;gap:6px;position:relative}
+.sheet .cat{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in oklab,var(--c) 65%,var(--fg))}
+.sheet h3{margin:0;font-size:22px;font-stretch:110%;font-weight:750;line-height:1.15;padding-right:40px}
+.sheet .when{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.sheet p{margin:0;max-width:65ch}
+.sheet .min{padding:8px 10px;border-radius:6px;background:var(--surface-2);font-size:14px}
+.sheet .min b{font-weight:700}
+.close{position:absolute;top:-4px;right:0;appearance:none;border:1px solid var(--line);background:var(--surface);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1}
+
+/* sistema */
+.sys-head{margin-top:56px;padding-top:20px;border-top:2px solid var(--fg);display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}
+h2{font-stretch:118%;font-weight:800;font-size:clamp(24px,3.4vw,34px);letter-spacing:-.015em;margin:0;line-height:1.05}
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:34px 40px;margin-top:22px}
+.sys section{min-width:0}
+h3.s{font-size:17px;font-stretch:105%;font-weight:750;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.sys ul,.sys ol{margin:0;padding-left:1.2em;display:grid;gap:8px;max-width:65ch}
+.sys li::marker{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.sys p{margin:0 0 8px;max-width:65ch}
+.sys b{font-weight:700}
+.span2{grid-column:1/-1}
+.rules{margin-top:40px;border-top:2px solid var(--fg)}
+.rules summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 0;font-stretch:118%;font-weight:800;font-size:clamp(20px,3vw,26px);letter-spacing:-.01em}
+.rules summary::-webkit-details-marker{display:none}
+.rules summary::after{content:"+";font-family:var(--f-mono);font-weight:400;font-size:26px;line-height:1;color:var(--muted)}
+.rules[open] summary::after{content:"–"}
+.rules ol{margin:0 0 8px;padding-left:1.3em;display:grid;gap:10px;max-width:65ch}
+.rules li::marker{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.rules b{font-weight:700}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--grid)}
+thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+tbody th{font-weight:700;width:90px}
+tr:last-child td,tr:last-child th{border-bottom:0}
+.check{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.check .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.check .top span{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--grid);cursor:pointer}
+.check label:first-of-type{border-top:0}
+.check input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--ink);flex:none}
+.check input:checked+span{color:var(--muted);text-decoration:line-through}
+.recipes{counter-reset:r}
+.mono{font-family:var(--f-mono);font-size:13px}
+
+.ev .s{display:none}
+.mobrow{display:none}
+.axis i{font-style:normal}
+
+@media (max-width:719px){
+  :root{--pph:56px}
+  /* móvil: cabecera compacta y el calendario justo debajo */
+  .wrap{display:flex;flex-direction:column;padding-block:12px 120px}
+  header{order:1} .bar{order:2} .mobrow{order:3} .calwrap{order:4} .banner{order:5} .sum{order:6} .sum-foot{order:7} .rules{order:8}
+  .eyebrow{font-size:11px}
+  h1{font-size:25px;margin:.15em 0 0}
+  .lede{display:none}
+  .bar{margin-top:10px;gap:8px}
+  .tab{padding:6px 11px;font-size:14px}
+  .tab small{display:none}
+  .ctl{gap:4px 14px}
+  .sw,.seg{font-size:13px}
+  .mobrow{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .modes{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+  .calwrap{margin-top:10px}
+  .pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+  .pill{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer;flex:none;display:grid;justify-items:center;line-height:1.1;min-width:52px}
+  .pill small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .pill b{font-family:var(--f-mono);font-weight:500;font-size:15px}
+  .pill.has-exam{border-color:var(--fg)}
+  .pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+  .pill[aria-pressed="true"] small{color:color-mix(in oklab,var(--on-ink) 70%,var(--ink))}
+  .cal{min-width:0}
+  /* vista día */
+  .mode-day .cal{grid-template-columns:46px 1fr}
+  .mode-day .dh:not(.on),.mode-day .dc:not(.on){display:none}
+  .mode-day .ev{font-size:13.5px}
+  /* vista semana: toda la semana en una pantalla */
+  .mode-week .pills{display:none}
+  .mode-week .calwrap{--pph:36px;border-radius:8px}
+  .mode-week .cal{grid-template-columns:24px repeat(var(--n),minmax(0,1fr))}
+  .mode-week .axis span{right:3px;font-size:9px}
+  .mode-week .axis i{display:none}
+  .mode-week .dh{padding:5px 1px 4px;flex-direction:column;align-items:center;gap:1px;cursor:pointer}
+  .mode-week .dh .dn{font-size:9.5px;letter-spacing:.02em}
+  .mode-week .dh .dd{font-size:15px}
+  .mode-week .badge{display:none}
+  .mode-week .dh.has-exam .dd{color:var(--sport)}
+  .mode-week .ev{left:1px;right:1px;padding:1px 2px;border-radius:3px;font-size:9.5px;font-stretch:68%;line-height:1.05}
+  .mode-week .ev .t,.mode-week .ev .h{display:none}
+  .mode-week .ev .s{display:block;font-weight:700;overflow:hidden;overflow-wrap:normal;word-break:keep-all}
+  .mode-week .ev.xs .s{display:none}
+  .mode-week .c-exam{border-width:1.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* base de la web-app (lo que en Claude pone el propio visor) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+img{max-width:100%}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Horario</h1>
+  </header>
+
+  <div class="bar">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="ctl">
+      <label class="sw" id="sw-lab"><input type="checkbox" id="lab"> Lab de Electro el miércoles</label>
+      <label class="sw" id="sw-opt"><input type="checkbox" id="opt"> OptiSim el viernes</label>
+      <label class="sw" id="sw-rm"><input type="checkbox" id="labr"> Lab de RM el viernes</label>
+      <div class="seg" id="seg-fut"><span>Fútbol del lunes</span><div class="seg-in" id="fut" role="group" aria-label="Hora del fútbol"></div></div>
+      <button type="button" class="wbtn" id="to-widget" hidden>Enviar al widget</button>
+    </div>
+  </div>
+
+  <div class="banner" id="banner" aria-live="polite"></div>
+
+  <div class="sum" id="sum"></div>
+  <div class="sum-foot" id="sumfoot"></div>
+
+  <div class="mobrow">
+    <div class="modes"><div class="seg-in" id="modes" role="group" aria-label="Vista"><button type="button" data-m="week">Semana</button><button type="button" data-m="day">Día</button></div></div>
+    <div class="pills" id="pills" role="group" aria-label="Día"></div>
+  </div>
+  <div class="calwrap"><div class="cal" id="cal"></div></div>
+
+  <details class="rules" id="rules">
+    <summary>Las reglas</summary>
+  <ol>
+      <li><b>La biblio es innegociable.</b> Si un día solo cumples una cosa, que sean los bloques de la biblio.</li>
+      <li><b>YouTube bloqueado en el portátil.</b> Con LeechBlock NG (extensión gratis) solo se abre en tus ratos libres, por ejemplo de 19:00 a 20:30 entre semana. Primero curras, luego vídeos.</li>
+      <li><b>Arranque de 5 minutos.</b> Abre primero los apuntes en papel, no el portátil. Escribe en una línea qué vas a hacer y pon 5' en el móvil. A ti te cuesta empezar, no parar: casi siempre seguirás.</li>
+      <li><b>Después de comer, portátil cerrado.</b> Recarga de 20': siesta con alarma en el sofá y el móvil fuera, o un paseo. A las 15:45 empieza el bloque, vayas como vayas.</li>
+      <li><b>Corte duro.</b> Alarma 10' antes de acabar cada bloque. Los bloques terminan en algo que te saca de la silla: Bonaigua, comer o gym. El estudio de noche se cierra a las 22:00.</li>
+      <li><b>A las 22:30, a la cama sin móvil.</b> El móvil se carga fuera de la habitación. Libro, rezar o guitarra. Dormido a las 22:50.</li>
+      <li><b>Nunca dos fallos seguidos</b> en Electro, MMCS, OptiSim o RM. Si cae un bloque, el siguiente de esa asignatura se hace aunque sea en versión mínima.</li>
+      <li><b>Rescate sin drama.</b> Lo que se caiga va al colchón del sábado o al comodín del domingo. Como mucho uno pendiente por asignatura, y nunca se recupera quitando sueño.</li>
+      <li><b>Cena sin portátil.</b> Si quieres pantalla, el móvil, que no tiene YouTube.</li>
+  </ol>
+  </details>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="false" aria-labelledby="sh-t">
+  <div class="sheet-in">
+    <button type="button" class="close" id="sh-x" aria-label="Cerrar">×</button>
+    <div class="cat" id="sh-c"></div>
+    <h3 id="sh-t"></h3>
+    <div class="when" id="sh-w"></div>
+    <p id="sh-n"></p>
+    <p class="min" id="sh-m"></p>
+  </div>
+</div>
+
+<script id="plan-data" type="application/json">{"subjects": {"electro": "Electro", "mmcs": "MMCS", "optisim": "OptiSim", "rm": "RM", "tsm": "TSM", "oyg": "OyG"}, "cats": {"study": {"l": "Estudio", "min": "Plan B (45'): un solo tipo de ejercicio. Plan C (20'): rehaz un ejercicio de tu hoja de errores. Nunca cero."}, "exam": {"l": "Examen", "min": "Llega 15' antes. La víspera y la mañana, nada nuevo: formulario y hoja de errores."}, "class": {"l": "Clase", "min": ""}, "lab": {"l": "Lab", "min": ""}, "racein": {"l": "RaceIn", "min": "Fijo. Si hay urgencia, se puede hacer online."}, "a": {"l": "A ❤️", "min": "Tu tiempo. No se toca."}, "sport": {"l": "Deporte", "min": "Plan B: 45' de gym solo con lo básico. Plan C: 20' en casa (flexiones, sentadillas, plancha) o 30' andando."}, "spirit": {"l": "Misa y formación", "min": "Plan B: entrar 5' de camino. Plan C: rezar en la cama a las 22:30."}, "meal": {"l": "Comida", "min": "Portátil cerrado. El móvil vale, que no tiene YouTube."}, "routine": {"l": "Rutina", "min": ""}, "travel": {"l": "Viaje", "min": "En moto no se estudia: cuenta como descanso."}, "sleep": {"l": "Sueño", "min": "No se toca. Si una noche es corta, al día siguiente solo bloques de biblio y nada de estudio nocturno."}, "recharge": {"l": "Recarga", "min": "Siesta exprés con alarma en el sofá y el móvil fuera de la habitación, o un paseo. Nunca después de las 15:45. Cero vídeos."}, "buffer": {"l": "Colchón", "min": "Aquí recuperas lo que se cayó. Si no se cayó nada, adelanta la asignatura que peor lleves."}, "review": {"l": "Revisión", "min": "25 minutos con la lista de la revisión del domingo. Una sola cosa que cambiar."}, "cook": {"l": "Tápers", "min": "Una receta, varias raciones. El plan de tápers está más abajo."}, "free": {"l": "Tu hueco", "min": "Lo decides tú: viaje o estudio."}, "ocio": {"l": "Libre", "min": "Libre de verdad. Los vídeos van aquí, no antes."}, "bed": {"l": "Cama sin móvil", "min": "Móvil a cargar fuera de la habitación. Libro, rezar o guitarra. Dormido a las 22:50."}}, "fut": {"21": [{"s": "19:05", "e": "19:40", "c": "ocio", "t": "Libre · vídeos aquí"}, {"s": "19:40", "e": "20:10", "c": "meal", "t": "Cena ligera"}, {"s": "20:25", "e": "22:30", "c": "sport", "t": "⚽ Fútbol 21h", "n": "Incluye el coche de ida y vuelta (25–30')."}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "22": [{"s": "19:05", "e": "20:15", "c": "ocio", "t": "Libre · vídeos aquí"}, {"s": "20:15", "e": "20:45", "c": "meal", "t": "Cena"}, {"s": "21:25", "e": "23:45", "c": "sport", "t": "⚽ Fútbol 22h", "n": "Incluye el coche de ida y vuelta (25–30')."}, {"s": "24:00", "e": "25:30", "c": "sleep", "t": "Sueño", "n": "Unas 6 h 50 de sueño."}], "23": [{"s": "19:05", "e": "19:45", "c": "ocio", "t": "Libre"}, {"s": "19:45", "e": "20:15", "c": "meal", "t": "Cena"}, {"s": "20:20", "e": "21:45", "c": "buffer", "t": "Noche · repaso ligero (opcional)", "n": "Te gusta estudiar de noche: si vas fresco, aprovecha este rato."}, {"s": "22:25", "e": "24:45", "c": "sport", "t": "⚽ Fútbol 23h", "n": "Llegas a casa a las 00:45."}, {"s": "25:00", "e": "25:30", "c": "sleep", "t": "Sueño", "n": "Unas 5 h 50 de sueño. El martes va en modo mínimo."}]}, "views": {"esta": {"label": "Esta semana", "range": "20–25 oct", "days": [{"k": "mar", "date": "2026-10-20", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "RM · H 9.1", "sub": "rm"}, {"s": "10:00", "e": "12:00", "c": "class", "t": "OyG · H 9.1", "sub": "oyg"}, {"s": "12:15", "e": "13:45", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Haz inventario: qué temas entran y qué no sabes hacer."}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Comida en la uni", "n": "Hoy no hay táper: compra algo. El primer batch es el domingo."}, {"s": "14:30", "e": "16:00", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Inventario de temas + problemas tipo."}, {"s": "16:20", "e": "17:50", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs", "n": "Inventario de temas + ejercicios."}, {"s": "18:05", "e": "19:35", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "Si vas frito, versión mínima de 20'."}, {"s": "19:50", "e": "20:15", "c": "travel", "t": "→ Monterols"}, {"s": "20:15", "e": "21:00", "c": "spirit", "t": "Monterols · formación"}, {"s": "21:00", "e": "21:40", "c": "travel", "t": "Moto → casa"}, {"s": "21:45", "e": "22:15", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Martes", "short": "Mar"}, {"k": "mie", "date": "2026-10-21", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "Electro · H 0.2", "sub": "electro"}, {"s": "10:00", "e": "12:00", "c": "lab", "t": "Lab Electro", "sub": "electro", "cond": "labE"}, {"s": "10:15", "e": "11:45", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "Semana sin lab: este hueco es Electro.", "cond": "noLabE"}, {"s": "12:05", "e": "13:00", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Bloque corto."}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:25", "c": "travel", "t": "Moto → casa"}, {"s": "14:30", "e": "15:15", "c": "meal", "t": "Comida · portátil cerrado"}, {"s": "15:15", "e": "15:40", "c": "recharge", "t": "Recarga 20'"}, {"s": "15:45", "e": "17:15", "c": "study", "t": "Casa · RM", "sub": "rm"}, {"s": "17:25", "e": "19:25", "c": "sport", "t": "Gym", "n": "Ir, entrenar 1h30–1h45 y ducharte allí."}, {"s": "19:30", "e": "20:00", "c": "ocio", "t": "Libre · vídeos aquí"}, {"s": "20:00", "e": "20:30", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "20:45", "e": "22:00", "c": "study", "t": "Noche · MMCS", "sub": "mmcs", "n": "A las 22:00 se cierra."}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Miércoles", "short": "Mié"}, {"k": "jue", "date": "2026-10-22", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "RM · H 9.1", "sub": "rm"}, {"s": "10:00", "e": "12:00", "c": "class", "t": "OyG · H 9.2", "sub": "oyg"}, {"s": "12:15", "e": "13:45", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs"}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Comida en la uni", "n": "Compra o llévate algo de casa."}, {"s": "14:30", "e": "16:00", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim"}, {"s": "16:20", "e": "17:50", "c": "study", "t": "Biblio · Electro", "sub": "electro"}, {"s": "18:00", "e": "18:35", "c": "buffer", "t": "Margen · fórmulas de RM"}, {"s": "18:35", "e": "19:00", "c": "travel", "t": "→ A"}, {"s": "19:00", "e": "22:00", "c": "a", "t": "A ❤️", "n": "La dejas en el pádel a las 22."}, {"s": "22:00", "e": "22:45", "c": "travel", "t": "Moto → casa"}, {"s": "22:45", "e": "23:05", "c": "bed", "t": "Cama sin móvil"}, {"s": "23:05", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Jueves", "short": "Jue"}, {"k": "vie", "date": "2026-10-23", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño", "cond": "optF"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno", "cond": "optF"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni", "cond": "optF"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "OptiSim · H 5.1", "sub": "optisim", "cond": "optF"}, {"s": "10:15", "e": "11:45", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Justo después del lab, en caliente.", "cond": "optF"}, {"s": "12:00", "e": "13:15", "c": "study", "t": "Biblio · Electro", "sub": "electro", "cond": "optF+noLabR"}, {"s": "13:20", "e": "14:00", "c": "travel", "t": "Moto → casa", "cond": "optF+noLabR"}, {"s": "14:15", "e": "15:00", "c": "meal", "t": "Comida · portátil cerrado", "cond": "optF+noLabR"}, {"s": "15:00", "e": "15:25", "c": "recharge", "t": "Recarga 20'", "cond": "optF+noLabR"}, {"s": "15:30", "e": "17:00", "c": "study", "t": "Casa · RM", "sub": "rm", "cond": "optF+noLabR"}, {"s": "17:00", "e": "19:00", "c": "free", "t": "Tu hueco · viaje o estudio", "cond": "optF+noLabR"}, {"s": "12:00", "e": "13:30", "c": "study", "t": "Biblio · Electro", "sub": "electro", "cond": "optF+labR"}, {"s": "13:30", "e": "14:15", "c": "meal", "t": "Comida en la uni (compra)", "cond": "optF+labR"}, {"s": "14:15", "e": "15:45", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Prepara el lab y haz problemas tipo examen.", "cond": "optF+labR"}, {"s": "15:45", "e": "16:00", "c": "travel", "t": "→ Lab RM", "cond": "optF+labR"}, {"s": "06:30", "e": "07:30", "c": "sleep", "t": "Sueño", "cond": "noOptF"}, {"s": "07:30", "e": "07:55", "c": "routine", "t": "Desayuno", "cond": "noOptF"}, {"s": "08:00", "e": "09:45", "c": "sport", "t": "Gym", "n": "Sin OptiSim: gym mañanero.", "cond": "noOptF"}, {"s": "10:00", "e": "11:30", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "cond": "noOptF"}, {"s": "11:50", "e": "13:20", "c": "study", "t": "Casa · Electro", "sub": "electro", "cond": "noOptF"}, {"s": "13:30", "e": "14:15", "c": "meal", "t": "Comida · portátil cerrado", "cond": "noOptF"}, {"s": "14:15", "e": "14:40", "c": "recharge", "t": "Recarga 20'", "cond": "noOptF+noLabR"}, {"s": "14:45", "e": "16:15", "c": "study", "t": "Casa · RM", "sub": "rm", "cond": "noOptF+noLabR"}, {"s": "16:35", "e": "17:35", "c": "study", "t": "Casa · MMCS", "sub": "mmcs", "n": "Bloque corto.", "cond": "noOptF+noLabR"}, {"s": "17:35", "e": "19:00", "c": "free", "t": "Tu hueco · viaje o estudio", "cond": "noOptF+noLabR"}, {"s": "14:20", "e": "15:00", "c": "travel", "t": "Moto → uni", "cond": "noOptF+labR"}, {"s": "15:05", "e": "15:50", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Repaso rápido antes del lab.", "cond": "noOptF+labR"}, {"s": "16:00", "e": "18:00", "c": "lab", "t": "Lab RM", "sub": "rm", "cond": "labR"}, {"s": "18:00", "e": "19:00", "c": "free", "t": "Tu hueco · viaje o estudio", "cond": "labR"}, {"s": "19:00", "e": "24:00", "c": "a", "t": "A ❤️"}, {"s": "24:00", "e": "25:00", "c": "travel", "t": "→ casa (1–2h)"}], "name": "Viernes", "short": "Vie"}, {"k": "sab", "date": "2026-10-24", "ev": [{"s": "06:30", "e": "08:30", "c": "sleep", "t": "Sueño", "n": "Duermes de 1:00 a 8:30."}, {"s": "08:30", "e": "09:00", "c": "routine", "t": "Desayuno"}, {"s": "09:15", "e": "10:45", "c": "study", "t": "Casa · Electro", "sub": "electro", "n": "Problemas tipo examen. Electro es tu prioridad número uno."}, {"s": "11:05", "e": "12:35", "c": "study", "t": "Casa · RM", "sub": "rm"}, {"s": "12:35", "e": "14:00", "c": "ocio", "t": "Libre"}, {"s": "14:00", "e": "14:45", "c": "meal", "t": "Comida"}, {"s": "14:45", "e": "15:10", "c": "recharge", "t": "Recarga 20'"}, {"s": "15:30", "e": "17:00", "c": "study", "t": "Casa · MMCS", "sub": "mmcs"}, {"s": "17:20", "e": "18:20", "c": "study", "t": "Casa · TSM", "sub": "tsm", "n": "Toque semanal para que no se enfríe."}, {"s": "18:30", "e": "20:15", "c": "sport", "t": "Gym", "n": "El viernes hubo OptiSim: el gym pasa aquí.", "cond": "optF"}, {"s": "20:15", "e": "24:00", "c": "ocio", "t": "Libre", "cond": "optF"}, {"s": "18:20", "e": "24:00", "c": "ocio", "t": "Libre", "cond": "noOptF"}, {"s": "24:00", "e": "25:30", "c": "sleep", "t": "Sueño", "n": "Esta noche cambia la hora: duermes una hora más."}], "name": "Sábado", "short": "Sáb"}, {"k": "dom", "date": "2026-10-25", "ev": [{"s": "06:30", "e": "09:00", "c": "sleep", "t": "Sueño"}, {"s": "09:00", "e": "09:45", "c": "routine", "t": "Arreglarte · desayunas después"}, {"s": "10:00", "e": "10:45", "c": "spirit", "t": "Misa"}, {"s": "10:50", "e": "11:20", "c": "meal", "t": "Desayuno"}, {"s": "11:40", "e": "13:20", "c": "sport", "t": "Gym"}, {"s": "14:00", "e": "15:00", "c": "meal", "t": "Comida en familia"}, {"s": "15:00", "e": "16:00", "c": "ocio", "t": "Descanso"}, {"s": "16:00", "e": "17:30", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "n": "Simulacro de 1h15 cronometrado, como el examen, y repaso de la hoja de errores."}, {"s": "17:45", "e": "18:30", "c": "cook", "t": "Tápers: 3 raciones", "n": "Para el martes, miércoles y jueves de parciales."}, {"s": "18:30", "e": "19:00", "c": "review", "t": "Revisión: plan de parciales"}, {"s": "19:00", "e": "20:15", "c": "study", "t": "Casa · RM", "sub": "rm", "n": "Problemas tipo examen."}, {"s": "20:30", "e": "21:00", "c": "meal", "t": "Cena"}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Domingo", "short": "Dom"}], "lab": true, "opt": true, "futCtl": false}, "parciales": {"label": "Parciales", "range": "26 oct – 2 nov", "days": [{"k": "lun", "date": "2026-10-26", "fut": true, "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "Electro · H 0.2 (si hay)", "sub": "electro"}, {"s": "10:15", "e": "11:45", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Hoja de errores y los ejercicios que fallaste."}, {"s": "12:00", "e": "13:00", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Los tipos de ejercicio que más caen."}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:25", "c": "travel", "t": "Moto → casa"}, {"s": "14:30", "e": "15:15", "c": "meal", "t": "Comida · portátil cerrado"}, {"s": "15:15", "e": "15:40", "c": "recharge", "t": "Recarga 20'"}, {"s": "15:45", "e": "17:00", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "n": "Segundo simulacro de 1h15."}, {"s": "17:20", "e": "18:50", "c": "study", "t": "Casa · RM", "sub": "rm"}], "name": "Lunes", "short": "Lun"}, {"k": "mar", "date": "2026-10-27", "ev": [{"s": "06:30", "e": "07:15", "c": "sleep", "t": "Sueño"}, {"s": "07:15", "e": "07:45", "c": "routine", "t": "Rutina y desayuno"}, {"s": "07:45", "e": "08:25", "c": "travel", "t": "Moto → uni"}, {"s": "08:30", "e": "10:00", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Repaso suave. Nada nuevo."}, {"s": "10:20", "e": "11:30", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Formulario y 2 ejercicios fáciles para entrar en ritmo."}, {"s": "11:30", "e": "12:00", "c": "meal", "t": "Algo de comer y desconectar"}, {"s": "12:30", "e": "13:45", "c": "exam", "t": "Examen OptiSim", "sub": "optisim"}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Táper"}, {"s": "14:30", "e": "15:00", "c": "recharge", "t": "Paseo · no repases el examen"}, {"s": "15:00", "e": "16:30", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Problemas tipo examen."}, {"s": "16:50", "e": "18:20", "c": "study", "t": "Biblio · RM", "sub": "rm"}, {"s": "18:35", "e": "19:35", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Formulario y hoja de errores."}, {"s": "19:50", "e": "20:15", "c": "travel", "t": "→ Monterols"}, {"s": "20:15", "e": "21:00", "c": "spirit", "t": "Monterols · formación"}, {"s": "21:00", "e": "21:40", "c": "travel", "t": "Moto → casa"}, {"s": "21:45", "e": "22:15", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Martes", "short": "Mar"}, {"k": "mie", "date": "2026-10-28", "ev": [{"s": "06:30", "e": "07:15", "c": "sleep", "t": "Sueño"}, {"s": "07:15", "e": "07:45", "c": "routine", "t": "Rutina y desayuno"}, {"s": "07:45", "e": "08:25", "c": "travel", "t": "Moto → uni"}, {"s": "08:30", "e": "10:00", "c": "study", "t": "Biblio · RM", "sub": "rm"}, {"s": "10:20", "e": "11:50", "c": "study", "t": "Biblio · RM", "sub": "rm"}, {"s": "12:00", "e": "13:00", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Repaso suave."}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:00", "c": "travel", "t": "→ uni"}, {"s": "14:00", "e": "14:40", "c": "meal", "t": "Táper"}, {"s": "14:40", "e": "15:10", "c": "recharge", "t": "Paseo · sin siesta"}, {"s": "15:10", "e": "16:20", "c": "study", "t": "Biblio · RM", "sub": "rm", "n": "Último repaso: formulario y hoja de errores."}, {"s": "16:40", "e": "17:00", "c": "travel", "t": "Al aula"}, {"s": "17:00", "e": "18:15", "c": "exam", "t": "Examen RM", "sub": "rm"}, {"s": "18:15", "e": "18:55", "c": "travel", "t": "Moto → casa"}, {"s": "19:05", "e": "20:35", "c": "sport", "t": "Gym corto", "n": "Para descargar después del examen: 1h15 y ducha."}, {"s": "20:45", "e": "21:15", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "21:30", "e": "22:15", "c": "study", "t": "Noche · MMCS", "sub": "mmcs", "n": "Repaso ligero de 45'. Mañana examen."}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Miércoles", "short": "Mié"}, {"k": "jue", "date": "2026-10-29", "ev": [{"s": "06:30", "e": "07:15", "c": "sleep", "t": "Sueño"}, {"s": "07:15", "e": "07:45", "c": "routine", "t": "Rutina y desayuno"}, {"s": "07:45", "e": "08:25", "c": "travel", "t": "Moto → uni"}, {"s": "08:30", "e": "10:00", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs", "n": "Repaso suave. Nada nuevo."}, {"s": "10:20", "e": "11:30", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs", "n": "Formulario y ejercicios fáciles."}, {"s": "11:30", "e": "12:00", "c": "meal", "t": "Algo de comer y desconectar"}, {"s": "12:30", "e": "13:45", "c": "exam", "t": "Examen MMCS", "sub": "mmcs"}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Táper"}, {"s": "14:30", "e": "15:00", "c": "recharge", "t": "Paseo"}, {"s": "15:00", "e": "16:30", "c": "study", "t": "Biblio · Electro", "sub": "electro"}, {"s": "16:50", "e": "18:20", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "Simulacro de 1h15."}, {"s": "18:35", "e": "19:00", "c": "travel", "t": "→ A"}, {"s": "19:00", "e": "22:00", "c": "a", "t": "A ❤️", "n": "Si quedáis. Mañana examen a las 9:30."}, {"s": "22:00", "e": "22:45", "c": "travel", "t": "Moto → casa"}, {"s": "22:45", "e": "23:05", "c": "bed", "t": "Cama sin móvil"}, {"s": "23:05", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Jueves", "short": "Jue"}, {"k": "vie", "date": "2026-10-30", "ev": [{"s": "06:30", "e": "07:00", "c": "sleep", "t": "Sueño"}, {"s": "07:00", "e": "07:40", "c": "routine", "t": "Rutina y desayuno"}, {"s": "07:40", "e": "08:20", "c": "travel", "t": "Moto → uni"}, {"s": "08:30", "e": "09:15", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "Formulario y hoja de errores. Nada nuevo."}, {"s": "09:30", "e": "10:45", "c": "exam", "t": "Examen Electro", "sub": "electro"}, {"s": "10:45", "e": "11:15", "c": "recharge", "t": "Pausa · desconecta"}, {"s": "11:15", "e": "12:45", "c": "study", "t": "Biblio · TSM", "sub": "tsm"}, {"s": "13:00", "e": "13:45", "c": "meal", "t": "Comida (compra)"}, {"s": "14:00", "e": "15:30", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "15:50", "e": "17:20", "c": "study", "t": "Biblio · TSM", "sub": "tsm"}, {"s": "17:40", "e": "19:10", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "19:15", "e": "20:00", "c": "meal", "t": "Cena (compra)"}, {"s": "20:00", "e": "21:30", "c": "study", "t": "Biblio · TSM", "sub": "tsm", "n": "Simulacro de 1h15."}, {"s": "21:50", "e": "23:30", "c": "buffer", "t": "Repaso ligero · hojas de errores", "n": "Desde las 22:00 solo repaso. Si no rindes, vete antes: dormir también es estudiar."}, {"s": "23:45", "e": "24:25", "c": "travel", "t": "Moto → casa"}, {"s": "24:30", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Viernes", "short": "Vie"}, {"k": "sab", "date": "2026-10-31", "ev": [{"s": "06:30", "e": "08:30", "c": "sleep", "t": "Sueño"}, {"s": "08:30", "e": "09:00", "c": "routine", "t": "Desayuno"}, {"s": "09:00", "e": "09:40", "c": "travel", "t": "Moto → biblio BCN"}, {"s": "09:45", "e": "11:15", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "11:35", "e": "13:05", "c": "study", "t": "Biblio · TSM", "sub": "tsm"}, {"s": "13:15", "e": "14:00", "c": "meal", "t": "Comida (compra)"}, {"s": "14:15", "e": "15:45", "c": "study", "t": "Biblio · OyG", "sub": "oyg", "n": "Simulacro de 1h15."}, {"s": "16:05", "e": "17:35", "c": "study", "t": "Biblio · TSM", "sub": "tsm"}, {"s": "17:55", "e": "19:25", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "19:30", "e": "20:15", "c": "meal", "t": "Cena (compra)"}, {"s": "20:30", "e": "22:00", "c": "study", "t": "Biblio · TSM", "sub": "tsm", "n": "Simulacro de 1h15."}, {"s": "22:15", "e": "23:30", "c": "buffer", "t": "Repaso ligero · hojas de errores", "n": "Si a media tarde vas KO, corta antes: el domingo también estudias."}, {"s": "23:45", "e": "24:25", "c": "travel", "t": "Moto → casa"}, {"s": "24:30", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Sábado", "short": "Sáb"}, {"k": "dom", "date": "2026-11-01", "ev": [{"s": "06:30", "e": "09:30", "c": "sleep", "t": "Sueño"}, {"s": "09:30", "e": "10:40", "c": "routine", "t": "Arreglarte · desayunas después"}, {"s": "11:00", "e": "11:45", "c": "spirit", "t": "Misa · Todos los Santos"}, {"s": "11:50", "e": "12:20", "c": "meal", "t": "Desayuno"}, {"s": "12:40", "e": "13:55", "c": "sport", "t": "Gym corto", "n": "1h15."}, {"s": "14:15", "e": "15:15", "c": "meal", "t": "Comida en familia"}, {"s": "15:15", "e": "16:15", "c": "ocio", "t": "Descanso"}, {"s": "16:15", "e": "17:45", "c": "study", "t": "Casa · TSM", "sub": "tsm", "n": "Lo que más cae y la hoja de errores."}, {"s": "18:05", "e": "19:35", "c": "study", "t": "Casa · OyG", "sub": "oyg"}, {"s": "19:40", "e": "20:00", "c": "review", "t": "Revisión · vuelve la semana tipo"}, {"s": "20:00", "e": "20:30", "c": "meal", "t": "Cena"}, {"s": "20:45", "e": "21:30", "c": "study", "t": "Noche · TSM", "sub": "tsm", "n": "Repaso ligero del formulario."}, {"s": "22:15", "e": "22:35", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:35", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Domingo", "short": "Dom"}, {"k": "lun", "date": "2026-11-02", "ev": [{"s": "06:30", "e": "07:15", "c": "sleep", "t": "Sueño"}, {"s": "07:15", "e": "07:45", "c": "routine", "t": "Rutina y desayuno"}, {"s": "07:45", "e": "08:25", "c": "travel", "t": "Moto → uni"}, {"s": "08:30", "e": "09:15", "c": "study", "t": "Biblio · TSM", "sub": "tsm", "n": "Repaso suave. Nada nuevo."}, {"s": "09:30", "e": "10:45", "c": "exam", "t": "Examen TSM", "sub": "tsm"}, {"s": "10:45", "e": "11:15", "c": "recharge", "t": "Pausa · desconecta"}, {"s": "11:15", "e": "12:45", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:00", "c": "travel", "t": "→ uni"}, {"s": "14:00", "e": "14:40", "c": "meal", "t": "Comida (compra)"}, {"s": "14:40", "e": "15:10", "c": "recharge", "t": "Paseo"}, {"s": "15:10", "e": "16:40", "c": "study", "t": "Biblio · OyG", "sub": "oyg"}, {"s": "17:00", "e": "18:00", "c": "study", "t": "Biblio · OyG", "sub": "oyg", "n": "Repaso suave: formulario y errores."}, {"s": "18:15", "e": "18:30", "c": "travel", "t": "Al aula"}, {"s": "18:30", "e": "19:45", "c": "exam", "t": "Examen OyG", "sub": "oyg", "n": "El último. Fin de parciales."}, {"s": "19:45", "e": "20:25", "c": "travel", "t": "Moto → casa"}, {"s": "20:30", "e": "21:00", "c": "meal", "t": "Cena"}, {"s": "21:00", "e": "22:30", "c": "ocio", "t": "Libre · te lo has ganado", "n": "Fútbol: si es a las 21h no llegas. Si es más tarde, decides tú."}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Lunes", "short": "Lun"}], "lab": false, "opt": false, "futCtl": true}, "tipo": {"label": "Semana tipo", "range": "desde el 3 nov", "days": [{"k": "lun", "fut": true, "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "Electro · H 0.2", "sub": "electro"}, {"s": "10:15", "e": "11:45", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "En caliente: lo de la clase de hoy y ejercicios."}, {"s": "12:00", "e": "13:00", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs", "n": "Bloque corto: un solo tipo de ejercicio."}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:25", "c": "travel", "t": "Moto → casa"}, {"s": "14:30", "e": "15:15", "c": "meal", "t": "Comida · portátil cerrado"}, {"s": "15:15", "e": "15:40", "c": "recharge", "t": "Recarga 20'"}, {"s": "15:45", "e": "17:15", "c": "study", "t": "Casa · OyG", "sub": "oyg", "n": "Mañana tienes clase: llega con los ejercicios hechos."}, {"s": "17:35", "e": "19:05", "c": "study", "t": "Casa · RM", "sub": "rm"}], "name": "Lunes", "short": "Lun"}, {"k": "mar", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "RM · H 9.1", "sub": "rm"}, {"s": "10:00", "e": "12:00", "c": "class", "t": "OyG · H 9.1", "sub": "oyg"}, {"s": "12:15", "e": "13:45", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim"}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Táper en la uni"}, {"s": "14:45", "e": "15:00", "c": "travel", "t": "→ RaceIn"}, {"s": "15:00", "e": "20:00", "c": "racein", "t": "RaceIn · BCN"}, {"s": "20:00", "e": "20:15", "c": "travel", "t": "→ Monterols"}, {"s": "20:15", "e": "21:00", "c": "spirit", "t": "Monterols · formación"}, {"s": "21:00", "e": "21:40", "c": "travel", "t": "Moto → casa"}, {"s": "21:45", "e": "22:15", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Martes", "short": "Mar"}, {"k": "mie", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "Electro · H 0.2", "sub": "electro"}, {"s": "10:00", "e": "12:00", "c": "lab", "t": "Lab Electro", "sub": "electro", "cond": "labE"}, {"s": "10:15", "e": "11:45", "c": "study", "t": "Biblio · Electro", "sub": "electro", "n": "Semana sin lab: este hueco es Electro.", "cond": "noLabE"}, {"s": "12:05", "e": "13:00", "c": "study", "t": "Biblio · OptiSim", "sub": "optisim", "n": "Bloque corto."}, {"s": "13:00", "e": "13:15", "c": "travel", "t": "→ Bonaigua"}, {"s": "13:15", "e": "13:45", "c": "spirit", "t": "Misa · Bonaigua"}, {"s": "13:45", "e": "14:25", "c": "travel", "t": "Moto → casa"}, {"s": "14:30", "e": "15:15", "c": "meal", "t": "Comida · portátil cerrado"}, {"s": "15:15", "e": "15:40", "c": "recharge", "t": "Recarga 20'"}, {"s": "15:45", "e": "17:15", "c": "study", "t": "Casa · MMCS", "sub": "mmcs"}, {"s": "17:25", "e": "19:25", "c": "sport", "t": "Gym", "n": "Ir, entrenar 1h30–1h45 y ducharte allí."}, {"s": "19:30", "e": "20:00", "c": "ocio", "t": "Libre · vídeos aquí"}, {"s": "20:00", "e": "20:30", "c": "meal", "t": "Cena · portátil cerrado"}, {"s": "20:45", "e": "22:00", "c": "study", "t": "Noche · TSM", "sub": "tsm", "n": "Estudio nocturno, que te gusta. A las 22:00 se cierra."}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Miércoles", "short": "Mié"}, {"k": "jue", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "RM · H 9.1", "sub": "rm"}, {"s": "10:00", "e": "12:00", "c": "class", "t": "OyG · H 9.2", "sub": "oyg"}, {"s": "12:15", "e": "13:45", "c": "study", "t": "Biblio · Electro", "sub": "electro"}, {"s": "13:45", "e": "14:30", "c": "meal", "t": "Táper en la uni"}, {"s": "14:30", "e": "16:00", "c": "study", "t": "Biblio · MMCS", "sub": "mmcs"}, {"s": "16:20", "e": "17:50", "c": "study", "t": "Biblio · RM", "sub": "rm"}, {"s": "18:00", "e": "18:35", "c": "buffer", "t": "Margen · repaso flojo", "n": "Flashcards, hoja de errores o rezar 5'."}, {"s": "18:35", "e": "19:00", "c": "travel", "t": "→ A"}, {"s": "19:00", "e": "22:00", "c": "a", "t": "A ❤️", "n": "La dejas en el pádel a las 22."}, {"s": "22:00", "e": "22:45", "c": "travel", "t": "Moto → casa"}, {"s": "22:45", "e": "23:05", "c": "bed", "t": "Cama sin móvil"}, {"s": "23:05", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Jueves", "short": "Jue"}, {"k": "vie", "ev": [{"s": "06:30", "e": "06:50", "c": "sleep", "t": "Sueño", "cond": "optF"}, {"s": "06:50", "e": "07:20", "c": "routine", "t": "Ventilar, cama, desayuno", "cond": "optF"}, {"s": "07:20", "e": "08:00", "c": "travel", "t": "Moto → uni", "cond": "optF"}, {"s": "08:00", "e": "10:00", "c": "class", "t": "OptiSim · H 5.1", "sub": "optisim", "cond": "optF"}, {"s": "10:00", "e": "10:40", "c": "travel", "t": "→ Premià (o Bonaigua 5')", "cond": "optF+noLabR"}, {"s": "10:45", "e": "11:50", "c": "study", "t": "Premià · OptiSim", "sub": "optisim", "n": "Repasa lo del lab en casa de tu amigo antes de empezar.", "cond": "optF+noLabR"}, {"s": "10:00", "e": "10:30", "c": "free", "t": "Bonaigua o repaso", "cond": "optF+labR"}, {"s": "10:30", "e": "15:30", "c": "racein", "t": "RaceIn · online", "n": "Con los dos labs no te mueves de BCN: RaceIn online desde la biblio. Comes durante, como en Premià: táper o compra.", "cond": "optF+labR"}, {"s": "15:30", "e": "15:50", "c": "travel", "t": "→ Lab RM", "cond": "optF+labR"}, {"s": "06:30", "e": "07:30", "c": "sleep", "t": "Sueño", "cond": "noOptF"}, {"s": "07:30", "e": "07:55", "c": "routine", "t": "Desayuno", "cond": "noOptF"}, {"s": "08:00", "e": "09:45", "c": "sport", "t": "Gym", "n": "Sin OptiSim: gym mañanero.", "cond": "noOptF"}, {"s": "10:00", "e": "11:30", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "cond": "noOptF+noLabR"}, {"s": "11:40", "e": "11:55", "c": "travel", "t": "→ Premià", "cond": "noOptF+noLabR"}, {"s": "09:45", "e": "10:00", "c": "travel", "t": "→ Premià", "cond": "noOptF+labR"}, {"s": "10:00", "e": "15:00", "c": "racein", "t": "RaceIn · Premià", "n": "Empiezas antes y acabas antes para bajar al lab de RM. Comes allí.", "cond": "noOptF+labR"}, {"s": "15:00", "e": "15:40", "c": "travel", "t": "Moto → uni", "cond": "noOptF+labR"}, {"s": "12:00", "e": "17:00", "c": "racein", "t": "RaceIn · Premià", "n": "Comes en casa de tu amigo.", "cond": "noLabR"}, {"s": "17:00", "e": "19:00", "c": "free", "t": "Tu hueco · viaje o estudio", "cond": "noLabR"}, {"s": "16:00", "e": "18:00", "c": "lab", "t": "Lab RM", "sub": "rm", "cond": "labR"}, {"s": "18:00", "e": "19:00", "c": "free", "t": "Tu hueco · viaje o estudio", "cond": "labR"}, {"s": "19:00", "e": "24:00", "c": "a", "t": "A ❤️"}, {"s": "24:00", "e": "25:00", "c": "travel", "t": "→ casa (1–2h)"}], "name": "Viernes", "short": "Vie"}, {"k": "sab", "ev": [{"s": "06:30", "e": "08:30", "c": "sleep", "t": "Sueño", "n": "Duermes de 1:00 a 8:30."}, {"s": "08:30", "e": "08:45", "c": "routine", "t": "Desayuno rápido"}, {"s": "08:45", "e": "09:00", "c": "travel", "t": "→ Premià"}, {"s": "09:00", "e": "14:00", "c": "racein", "t": "RaceIn · Premià"}, {"s": "14:00", "e": "14:15", "c": "travel", "t": "→ casa"}, {"s": "14:30", "e": "15:15", "c": "meal", "t": "Comida"}, {"s": "15:15", "e": "15:40", "c": "recharge", "t": "Recarga 20'", "n": "Hoy sí te la has ganado: dormiste poco."}, {"s": "16:00", "e": "17:45", "c": "sport", "t": "Gym", "n": "El viernes hubo OptiSim: el gym pasa aquí.", "cond": "optF"}, {"s": "18:00", "e": "19:30", "c": "buffer", "t": "Colchón semanal", "cond": "optF+noLabR"}, {"s": "18:00", "e": "19:30", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "n": "Semana con lab de RM: el viernes OptiSim se quedó sin bloque y va aquí.", "cond": "optF+labR"}, {"s": "19:30", "e": "24:30", "c": "ocio", "t": "Libre", "cond": "optF"}, {"s": "16:00", "e": "17:30", "c": "buffer", "t": "Colchón semanal", "cond": "noOptF+noLabR"}, {"s": "16:00", "e": "17:30", "c": "study", "t": "Casa · OptiSim", "sub": "optisim", "n": "Semana con lab de RM: el viernes OptiSim se quedó sin bloque y va aquí.", "cond": "noOptF+labR"}, {"s": "17:30", "e": "24:30", "c": "ocio", "t": "Libre", "cond": "noOptF"}, {"s": "24:30", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Sábado", "short": "Sáb"}, {"k": "dom", "ev": [{"s": "06:30", "e": "09:00", "c": "sleep", "t": "Sueño"}, {"s": "09:00", "e": "09:45", "c": "routine", "t": "Arreglarte · desayunas después"}, {"s": "10:00", "e": "10:45", "c": "spirit", "t": "Misa"}, {"s": "10:50", "e": "11:20", "c": "meal", "t": "Desayuno"}, {"s": "11:40", "e": "13:20", "c": "sport", "t": "Gym"}, {"s": "14:00", "e": "15:00", "c": "meal", "t": "Comida en familia"}, {"s": "15:00", "e": "17:00", "c": "ocio", "t": "Descanso de verdad"}, {"s": "17:00", "e": "17:45", "c": "cook", "t": "Tápers de la semana", "n": "2 raciones: martes y jueves."}, {"s": "18:00", "e": "18:30", "c": "review", "t": "Revisión semanal"}, {"s": "18:30", "e": "20:00", "c": "buffer", "t": "Comodín · la que peor vaya", "n": "La asignatura que más se haya quedado atrás o un bloque caído."}, {"s": "20:30", "e": "21:00", "c": "meal", "t": "Cena"}, {"s": "22:30", "e": "22:50", "c": "bed", "t": "Cama sin móvil"}, {"s": "22:50", "e": "25:30", "c": "sleep", "t": "Sueño"}], "name": "Domingo", "short": "Dom"}], "lab": true, "opt": true, "futCtl": true}}}</script>
+<script>
+(function(){
+  var DATA = JSON.parse(document.getElementById('plan-data').textContent);
+  var START = 390, END = 1530, SPAN = END - START;
+  var ORDER = ['electro','mmcs','optisim','rm','tsm','oyg'];
+  var DOW = {lun:0,mar:1,mie:2,jue:3,vie:4,sab:5,dom:6};
+  var MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var CATCOLOR = {racein:'--racein', sport:'--sport', a:'--a', spirit:'--spirit'};
+  var SHORT = {electro:'Elec', mmcs:'MMCS', optisim:'Opti', rm:'RM', tsm:'TSM', oyg:'OyG'};
+  function shortOf(e){
+    switch (e.c){
+      case 'study': case 'class': return SHORT[e.sub] || '';
+      case 'lab': return 'Lab ' + (SHORT[e.sub] || '');
+      case 'exam': return 'EX ' + SHORT[e.sub];
+      case 'racein': return 'RaceIn';
+      case 'a': return 'A ❤️';
+      case 'sport': return /Fútbol/.test(e.t) ? 'Fútbol' : 'Gym';
+      case 'spirit': return /Monterols/.test(e.t) ? 'Mont.' : 'Misa';
+      case 'buffer': return e.t.split(/[ ·]/)[0];
+      case 'review': return 'Revisión';
+      case 'cook': return 'Tápers';
+      case 'bed': return 'Cama';
+      default: return '';
+    }
+  }
+
+  var store = {
+    get: function(k, d){ try { var v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+    set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+  };
+  function toMin(t){ var p = t.split(':'); return (+p[0]) * 60 + (+p[1]); }
+  function fmt(t){ var p = t.split(':'), h = +p[0]; if (h >= 24) h -= 24; return h + ':' + p[1]; }
+  function durTxt(a, b){ var d = toMin(b) - toMin(a), h = Math.floor(d / 60), m = d % 60; return (h ? h + ' h' : '') + (h && m ? ' ' : '') + (m ? m + ' min' : ''); }
+  function hrs(m){ var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + String(r).padStart(2,'0') : ''); }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  var now = new Date();
+  var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  var todayDow = (now.getDay() + 6) % 7;
+
+  var state = {
+    view: todayStr < '2026-10-26' ? 'esta' : (todayStr <= '2026-11-02' ? 'parciales' : 'tipo'),
+    labE: !!store.get('labE', false),
+    optF: !!store.get('optF', true),
+    labR: !!store.get('labR', false),
+    fut: String(store.get('fut', '21')),
+    mode: store.get('mode', 'week') === 'day' ? 'day' : 'week',
+    day: null
+  };
+  var wrap = document.querySelector('.wrap');
+  if (!DATA.fut[state.fut]) state.fut = '21';
+  var rendered = [];
+
+  function condOk(c){
+    if (!c) return true;
+    var ok = {labE: state.labE, noLabE: !state.labE, optF: state.optF, noOptF: !state.optF, labR: state.labR, noLabR: !state.labR};
+    return c.split('+').every(function(p){ return ok[p]; });
+  }
+  function dayEvents(d){
+    var ev = d.ev.filter(function(e){ return condOk(e.cond); });
+    if (d.fut) ev = ev.concat(DATA.fut[state.fut]);
+    return ev.slice().sort(function(a, b){ return toMin(a.s) - toMin(b.s); });
+  }
+  function isToday(d){ return d.date ? d.date === todayStr : (state.view === 'tipo' && DOW[d.k] === todayDow); }
+  function colorOf(e){ if (e.sub) return 'var(--' + e.sub + ')'; return CATCOLOR[e.c] ? 'var(' + CATCOLOR[e.c] + ')' : 'var(--neutral)'; }
+  function dayLabel(d){ return d.name + (d.date ? ' ' + (+d.date.slice(8)) + ' ' + MONTHS[+d.date.slice(5,7) - 1] : ''); }
+
+  /* pestañas y controles */
+  var tabs = document.getElementById('tabs');
+  Object.keys(DATA.views).forEach(function(k){
+    var v = DATA.views[k];
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab'; b.setAttribute('role','tab'); b.dataset.v = k;
+    b.innerHTML = esc(v.label) + ' <small>' + esc(v.range) + '</small>';
+    b.addEventListener('click', function(){ state.view = k; state.day = null; render(); });
+    tabs.appendChild(b);
+  });
+  var lab = document.getElementById('lab'), opt = document.getElementById('opt');
+  lab.checked = state.labE; opt.checked = state.optF;
+  lab.addEventListener('change', function(){ state.labE = lab.checked; store.set('labE', state.labE); render(); });
+  opt.addEventListener('change', function(){ state.optF = opt.checked; store.set('optF', state.optF); render(); });
+  /* en la web-app de GitHub: pasa los interruptores al widget de Scriptable */
+  var tw = document.getElementById('to-widget');
+  if (/github\.io$/.test(location.hostname)) tw.hidden = false;
+  tw.addEventListener('click', function(){
+    location.href = 'scriptable:///run/Horario?labE=' + (state.labE ? 1 : 0) + '&optF=' + (state.optF ? 1 : 0) +
+      '&labR=' + (state.labR ? 1 : 0) + '&fut=' + state.fut;
+  });
+  var labr = document.getElementById('labr');
+  labr.checked = state.labR;
+  labr.addEventListener('change', function(){ state.labR = labr.checked; store.set('labR', state.labR); render(); });
+  var fut = document.getElementById('fut');
+  ['21','22','23'].forEach(function(h){
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = h + 'h'; b.dataset.h = h;
+    b.addEventListener('click', function(){ state.fut = h; store.set('fut', h); render(); });
+    fut.appendChild(b);
+  });
+
+  function renderBanner(v){
+    var lines = [];
+    if (v.futCtl && state.fut === '22') lines.push('<p class="warn">Fútbol a las 22h: llegas a casa a las 23:45 y duermes unas 6 h 50.</p>');
+    if (v.futCtl && state.fut === '23') {
+      lines.push(state.view === 'parciales'
+        ? '<p class="warn">Fútbol a las 23h: llegas a las 00:45 y duermes unas 5 h 50, con el examen de OptiSim al día siguiente. Plantéate no ir esta semana.</p>'
+        : '<p class="warn">Fútbol a las 23h: llegas a las 00:45 y duermes unas 5 h 50. El martes, el bloque de biblio pasa a plan B (45\') y a las 22:30 a la cama sí o sí.</p>');
+    }
+    document.getElementById('banner').innerHTML = lines.join('');
+    document.getElementById('banner').hidden = !lines.length;
+  }
+
+  function renderSummary(v){
+    var tot = {}, buf = 0, exams = 0, all = 0;
+    v.days.forEach(function(d){
+      dayEvents(d).forEach(function(e){
+        var m = toMin(e.e) - toMin(e.s);
+        if (e.c === 'study' && e.sub){ tot[e.sub] = (tot[e.sub] || 0) + m; all += m; }
+        else if (e.c === 'buffer') buf += m;
+        else if (e.c === 'exam') exams++;
+      });
+    });
+    var max = Math.max.apply(null, ORDER.map(function(k){ return tot[k] || 0; }).concat([1]));
+    document.getElementById('sum').innerHTML = ORDER.map(function(k){
+      var m = tot[k] || 0;
+      return '<div class="sum-row" style="--c:var(--' + k + ')"><b>' + esc(DATA.subjects[k]) + '</b><div class="track"><i style="width:' + (m / max * 100).toFixed(1) + '%"></i></div><span class="v">' + hrs(m) + '</span></div>';
+    }).join('');
+    document.getElementById('sumfoot').textContent = 'Estudio: ' + hrs(all) + ' · Colchón: ' + hrs(buf) + (exams ? ' · Exámenes: ' + exams : '');
+  }
+
+  function renderCal(v){
+    var days = v.days, cal = document.getElementById('cal');
+    var active = state.day;
+    if (active === null || active >= days.length){
+      active = 0;
+      days.forEach(function(d, i){ if (isToday(d)) active = i; });
+      state.day = active;
+    }
+    cal.style.setProperty('--n', days.length);
+    rendered = [];
+    var html = '<div class="corner"></div>';
+    days.forEach(function(d, i){
+      var ex = dayEvents(d).filter(function(e){ return e.c === 'exam'; });
+      html += '<div class="dh' + (isToday(d) ? ' today' : '') + (i === active ? ' on' : '') + (ex.length ? ' has-exam' : '') + '" data-i="' + i + '"><span class="dn">' + esc(d.short) + '</span>' +
+        (d.date ? '<span class="dd">' + (+d.date.slice(8)) + '</span>' : '') +
+        ex.map(function(e){ return '<span class="badge" style="--c:var(--' + e.sub + ')">Examen ' + esc(DATA.subjects[e.sub]) + ' ' + fmt(e.s) + '</span>'; }).join('') +
+        '</div>';
+    });
+    html += '<div class="axis">';
+    for (var h = 7; h <= 25; h++){
+      html += '<span style="top:' + ((h * 60 - START) / SPAN * 100) + '%">' + (h % 24) + '<i>:00</i></span>';
+    }
+    html += '</div>';
+    days.forEach(function(d, i){
+      var evs = dayEvents(d);
+      rendered[i] = evs;
+      html += '<div class="dc' + (isToday(d) ? ' today' : '') + (i === active ? ' on' : '') + '">';
+      evs.forEach(function(e, j){
+        var s = Math.max(toMin(e.s), START), en = Math.min(toMin(e.e), END), mins = en - s;
+        var size = mins < 25 ? 'xs' : (mins < 50 ? 'sm' : 'md');
+        html += '<button type="button" class="ev c-' + e.c + ' ' + size + '" data-d="' + i + '" data-j="' + j + '" ' +
+          'style="top:calc(' + ((s - START) / SPAN * 100).toFixed(3) + '% + 1px);height:calc(' + (mins / SPAN * 100).toFixed(3) + '% - 2px);--c:' + colorOf(e) + '" ' +
+          'title="' + esc(e.t) + ' · ' + fmt(e.s) + '–' + fmt(e.e) + '">' +
+          '<span class="t">' + esc(e.t) + '</span><span class="h">' + fmt(e.s) + '–' + fmt(e.e) + '</span><span class="s">' + esc(shortOf(e)) + '</span></button>';
+      });
+      if (isToday(d)){
+        var nm = now.getHours() * 60 + now.getMinutes();
+        if (nm >= START && nm <= END) html += '<div class="now" style="top:' + ((nm - START) / SPAN * 100) + '%"></div>';
+      }
+      html += '</div>';
+    });
+    cal.innerHTML = html;
+
+    document.getElementById('pills').innerHTML = days.map(function(d, i){
+      var hasEx = dayEvents(d).some(function(e){ return e.c === 'exam'; });
+      return '<button type="button" class="pill' + (hasEx ? ' has-exam' : '') + '" aria-pressed="' + (i === active) + '" data-i="' + i + '"><small>' + esc(d.short) + '</small><b>' + (d.date ? (+d.date.slice(8)) : '·') + '</b></button>';
+    }).join('');
+  }
+
+  function render(){
+    var v = DATA.views[state.view];
+    Array.prototype.forEach.call(tabs.children, function(b){ b.setAttribute('aria-selected', b.dataset.v === state.view); });
+    document.getElementById('sw-lab').hidden = !v.lab;
+    document.getElementById('sw-opt').hidden = !v.opt;
+    document.getElementById('sw-rm').hidden = !v.lab;
+    document.getElementById('seg-fut').hidden = !v.futCtl;
+    Array.prototype.forEach.call(fut.children, function(b){ b.setAttribute('aria-pressed', b.dataset.h === state.fut); });
+    renderBanner(v); renderSummary(v); renderCal(v); renderMode();
+  }
+
+  /* vista semana / día en el móvil */
+  var modes = document.getElementById('modes');
+  function renderMode(){
+    wrap.classList.toggle('mode-week', state.mode === 'week');
+    wrap.classList.toggle('mode-day', state.mode === 'day');
+    Array.prototype.forEach.call(modes.children, function(b){ b.setAttribute('aria-pressed', b.dataset.m === state.mode); });
+  }
+  modes.addEventListener('click', function(ev){
+    var b = ev.target.closest('button'); if (!b) return;
+    state.mode = b.dataset.m; store.set('mode', state.mode); renderMode();
+  });
+
+  document.getElementById('pills').addEventListener('click', function(ev){
+    var b = ev.target.closest('.pill'); if (!b) return;
+    state.day = +b.dataset.i; renderCal(DATA.views[state.view]);
+  });
+
+  /* detalle */
+  var sheet = document.getElementById('sheet');
+  document.getElementById('cal').addEventListener('click', function(ev){
+    var h = ev.target.closest('.dh');
+    if (h && state.mode === 'week' && window.matchMedia('(max-width:719px)').matches){
+      state.day = +h.dataset.i; state.mode = 'day'; store.set('mode', 'day');
+      renderCal(DATA.views[state.view]); renderMode(); return;
+    }
+    var b = ev.target.closest('.ev'); if (!b) return;
+    var d = DATA.views[state.view].days[+b.dataset.d], e = rendered[+b.dataset.d][+b.dataset.j];
+    var cat = DATA.cats[e.c] || {l:'', min:''};
+    sheet.style.setProperty('--c', colorOf(e));
+    document.getElementById('sh-c').textContent = cat.l + (e.sub && e.c !== 'class' && e.c !== 'lab' ? ' · ' + DATA.subjects[e.sub] : '');
+    document.getElementById('sh-t').textContent = e.t;
+    document.getElementById('sh-w').textContent = dayLabel(d) + ' · ' + fmt(e.s) + '–' + fmt(e.e) + ' (' + durTxt(e.s, e.e) + ')';
+    var n = document.getElementById('sh-n'); n.textContent = e.n || ''; n.hidden = !e.n;
+    var m = document.getElementById('sh-m');
+    if (cat.min){
+      var lbl = (e.c === 'study' || e.c === 'sport' || e.c === 'spirit') ? 'Si no llegas: ' : '';
+      m.innerHTML = (lbl ? '<b>' + lbl + '</b>' : '') + esc(cat.min); m.hidden = false;
+    } else { m.hidden = true; }
+    sheet.hidden = false;
+    document.getElementById('sh-x').focus({preventScroll:true});
+  });
+  function closeSheet(){ sheet.hidden = true; }
+  document.getElementById('sh-x').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSheet(); });
+
+  render();
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function(){}); }
+</script>
+</body>
+</html>
