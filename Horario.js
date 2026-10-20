@@ -142,8 +142,9 @@ function buildWidget(plan, s, family) {
     r.setPadding(2, 4, 2, 6); r.cornerRadius = 5;
     if (isCur) r.backgroundColor = colorOf(e, plan, 0.2);
 
-    const tc = r.addStack(); tc.size = new Size(small ? 32 : 36, 0);
+    const tc = r.addStack(); tc.size = new Size(small ? 38 : 44, 0);
     const t = tc.addText(fmt(e.s));
+    t.lineLimit = 1; t.minimumScaleFactor = 0.7;
     t.font = isCur ? Font.boldMonospacedSystemFont(fs - 1) : Font.regularMonospacedSystemFont(fs - 1);
     t.textColor = isPast ? FAINT : MUTED;
     tc.addSpacer();
